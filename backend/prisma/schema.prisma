@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum MatchStatus {
+  UPCOMING
+  LIVE
+  FINISHED
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  googleId           String   @unique
+  email              String   @unique
+  username           String
+  avatarUrl          String?
+  role               UserRole @default(USER)
+  isBanned           Boolean  @default(false)
+
+  totalPoints        Int      @default(0)
+  correctPredictions Int      @default(0)
+  totalPredictions   Int      @default(0)
+  exactScoreHits     Int      @default(0)
+  streak             Int      @default(0)
+  accuracy           Float    @default(0)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  predictions        Prediction[]
+}
+
+model Match {
+  id              String      @id @default(cuid())
+  externalApiId   Int         @unique
+
+  homeTeam        String
+  awayTeam        String
+  homeFlag        String?
+  awayFlag        String?
+
+  stage           String
+  kickoffTime     DateTime
+  status          MatchStatus @default(UPCOMING)
+
+  homeScore       Int?
+  awayScore       Int?
+  winner          String?
+
+  venue           String?
+
+  basePoints      Int         @default(5)
+  exactScoreBonus Int         @default(0)
+
+  syncedAt        DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  predictions     Prediction[]
+}
+
+model Prediction {
+  id                 String   @id @default(cuid())
+  userId             String
+  matchId            String
+
+  predictedHomeScore Int?
+  predictedAwayScore Int?
+
+  skipped            Boolean  @default(false)
+  pointsEarned       Int      @default(0)
+
+  submittedAt        DateTime @default(now())
+
+  user               User     @relation(fields: [userId], references: [id])
+  match              Match    @relation(fields: [matchId], references: [id])
+
+  @@unique([userId, matchId])
+}
