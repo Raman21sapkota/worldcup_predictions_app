@@ -3,7 +3,7 @@ export class PredictionController {
     this.predictionService = predictionService
   }
 
-  async create(req, res) {
+  async create(req, res, next) {
     try {
       const { matchId, predictedHomeScore, predictedAwayScore } = req.body
       const prediction = await this.predictionService.createPrediction(
@@ -11,38 +11,26 @@ export class PredictionController {
       )
       res.status(201).json(prediction)
     } catch (error) {
-      if (error.message === "Match not found") {
-        return res.status(404).json({ error: error.message })
-      }
-      if (
-        error.message === "Can only predict on upcoming matches" ||
-        error.message === "Match has already kicked off"
-      ) {
-        return res.status(400).json({ error: error.message })
-      }
-      console.error("Failed to save prediction:", error)
-      res.status(500).json({ error: "Failed to save prediction" })
+      next(error)
     }
   }
 
-  async getMyPredictions(req, res) {
+  async getMyPredictions(req, res, next) {
     try {
       const predictions = await this.predictionService.getMyPredictions(req.user.userId)
       res.json(predictions)
     } catch (error) {
-      console.error("Failed to fetch predictions:", error)
-      res.status(500).json({ error: "Failed to fetch predictions" })
+      next(error)
     }
   }
 
-  async getUserPredictions(req, res) {
+  async getUserPredictions(req, res, next) {
     try {
       const { userId } = req.params
       const result = await this.predictionService.getUserPredictions(userId)
       res.json(result)
     } catch (error) {
-      console.error("Failed to fetch predictions:", error)
-      res.status(500).json({ error: "Failed to fetch predictions" })
+      next(error)
     }
   }
 }

@@ -3,27 +3,25 @@ export class SyncController {
     this.syncService = syncService
   }
 
-  async sync(req, res) {
+  async sync(req, res, next) {
     try {
       const result = await this.syncService.syncMatches()
       res.json(result)
     } catch (error) {
-      console.error("Sync POST failed:", error)
-      res.status(500).json({ error: "Sync failed" })
+      next(error)
     }
   }
 
-  async getSyncInfo(req, res) {
+  async getSyncInfo(req, res, next) {
     try {
       const lastSyncedAt = await this.syncService.getLastSyncTime()
       res.json({ lastSyncedAt })
     } catch (error) {
-      console.error("Sync GET failed:", error)
-      res.status(500).json({ error: "Failed to get sync info" })
+      next(error)
     }
   }
 
-  async cronSync(req, res) {
+  async cronSync(req, res, next) {
     const authHeader = req.headers.authorization
     const expected = `Bearer ${process.env.CRON_SECRET}`
     if (!authHeader || authHeader !== expected) {
@@ -34,8 +32,7 @@ export class SyncController {
       const result = await this.syncService.syncMatches()
       res.json({ ok: true, ...result })
     } catch (error) {
-      console.error("Cron sync failed:", error)
-      res.status(500).json({ error: "Sync failed" })
+      next(error)
     }
   }
 }

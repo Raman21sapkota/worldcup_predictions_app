@@ -1,3 +1,4 @@
+import { AppError } from "../utils/AppError.js"
 import { matchRepository } from "../repositories/index.js"
 import { predictionRepository } from "../repositories/index.js"
 import { userRepository } from "../repositories/index.js"
@@ -7,13 +8,13 @@ export class PredictionService {
   async createPrediction(userId, matchId, predictedHomeScore, predictedAwayScore) {
     const match = await matchRepository.findById(matchId)
     if (!match) {
-      throw new Error("Match not found")
+      throw new AppError("Match not found", 404)
     }
     if (match.status !== "UPCOMING") {
-      throw new Error("Can only predict on upcoming matches")
+      throw new AppError("Can only predict on upcoming matches", 400)
     }
     if (new Date(match.kickoffTime) <= new Date()) {
-      throw new Error("Match has already kicked off")
+      throw new AppError("Match has already kicked off", 400)
     }
 
     return predictionRepository.upsertByUserAndMatch(
