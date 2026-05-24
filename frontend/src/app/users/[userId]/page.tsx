@@ -43,18 +43,6 @@ export default async function UserDetailPage({
     notFound()
   }
 
-  if (user.isBanned) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-6">
-        <Card>
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            This user has been removed from the leaderboard.
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   const predictions = await serverApi(`/api/predictions/user/${userId}`)
 
   return (
