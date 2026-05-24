@@ -1,3 +1,5 @@
+import { createServer } from "http"
+import { Server } from "socket.io"
 import { setupExpressApp } from "./app.js"
 import prisma from "./lib/prisma.js"
 
@@ -7,8 +9,20 @@ async function startServer() {
   try {
     await prisma.$connect()
     console.log("Database connected successfully")
+
     const app = setupExpressApp()
-    app.listen(PORT, () => {
+    const httpServer = createServer(app)
+
+    const io = new Server(httpServer, {
+      cors: {
+        origin: process.env.FRONTEND_URL || true,
+        credentials: true,
+      },
+    })
+
+    app.locals.io = io
+
+    httpServer.listen(PORT, () => {
       console.log(`API server running on http://localhost:${PORT} - (${process.env.NODE_ENV || "development"} mode)`)
     })
   } catch (error) {

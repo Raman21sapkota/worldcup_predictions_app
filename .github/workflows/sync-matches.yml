@@ -13,4 +13,4 @@ jobs:
         run: |
           curl -s -X GET \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://worldcup-predictor-raman.vercel.app/api/cron/sync"
+            "https://worldcup-predictor-raman.vercel.app/api/sync/cron"
