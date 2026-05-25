@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { sendErrorResponse } from "../lib/responseHelper.js"
+import { AppError } from "../utils/AppError.js"
 
 const UUIDFormat = z.string().min(1, "ID is required")
 const scoreFormat = z.number().int("Score must be an integer").min(0, "Score cannot be negative")
@@ -29,13 +29,9 @@ export const validateSchema = (schema) => {
       next()
     } catch (error) {
       if (error.errors) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join("."),
-          message: err.message
-        }))
-        return sendErrorResponse(res, 400, "Validation failed", { errors: validationErrors })
+        throw new AppError("Validation failed", 400)
       }
-      return sendErrorResponse(res, 400, "Invalid input data")
+      throw new AppError("Invalid input data", 400)
     }
   }
 }
@@ -47,13 +43,9 @@ export const validateParam = (schema) => {
       next()
     } catch (error) {
       if (error.errors) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join("."),
-          message: err.message
-        }))
-        return sendErrorResponse(res, 400, "Validation failed", { errors: validationErrors })
+        throw new AppError("Validation failed", 400)
       }
-      return sendErrorResponse(res, 400, "Invalid input data")
+      throw new AppError("Invalid input data", 400)
     }
   }
 }
