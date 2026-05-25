@@ -98,3 +98,5 @@ And in `frontend/.env`:
 │       └── lib/            # Auth, socket, API helpers
 └── docker-compose.yml
 ```
+
+
