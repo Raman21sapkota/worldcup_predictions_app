@@ -4,18 +4,11 @@ import { Trophy, ArrowRight, Users, Brain, Medal } from "lucide-react"
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 md:px-8">
+      <header className="flex items-center justify-center border-b border-border bg-card px-4 py-3 md:px-8">
         <div className="flex items-center gap-2 text-base font-semibold">
           <Trophy className="size-5 text-gold" />
           <span>World Cup 2026</span>
         </div>
-        <Link
-          href="/api/auth/login"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-light"
-        >
-          Sign In
-          <ArrowRight className="size-4" />
-        </Link>
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
@@ -68,9 +61,7 @@ export default function LandingPage() {
               Sign in with Google
               <ArrowRight className="size-5" />
             </Link>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Only your email and name are used for authentication
-            </p>
+
           </div>
         </div>
       </main>

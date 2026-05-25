@@ -14,11 +14,19 @@ export function ScoreStepper({ value, onChange, min = 0, max = 99 }: ScoreSteppe
   const num = value === "" ? 0 : parseInt(value, 10)
 
   function decrement() {
+    if (value === "") {
+      onChange("0")
+      return
+    }
     const next = Math.max(min, num - 1)
     onChange(String(next))
   }
 
   function increment() {
+    if (value === "") {
+      onChange("0")
+      return
+    }
     const next = Math.min(max, num + 1)
     onChange(String(next))
   }
@@ -28,7 +36,7 @@ export function ScoreStepper({ value, onChange, min = 0, max = 99 }: ScoreSteppe
       <button
         type="button"
         onClick={decrement}
-        disabled={num <= min}
+        disabled={value !== "" && num <= min}
         className={cn(
           "flex size-9 items-center justify-center rounded-l-lg border border-r-0 border-border bg-card text-muted-foreground transition-colors",
           "hover:bg-fifa-blue hover:text-white hover:border-fifa-blue",
