@@ -6,7 +6,6 @@ import { Trophy } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { SyncButton } from "@/components/sync-button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogoutButton } from "@/components/logout-button"
 
 const navLinks = [
@@ -47,10 +46,6 @@ export function Navbar() {
       </div>
       <div className="flex items-center gap-2">
         <SyncButton />
-        <Avatar size="sm">
-          <AvatarImage src="/avatar.png" alt="User" />
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
         <LogoutButton />
       </div>
     </header>

@@ -172,7 +172,7 @@ export default function HomeClient({
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6">
       {toast && (
         <div
-          className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium animate-in fade-in ${
+          className={`fixed top-20 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium animate-in fade-in ${
             toast.type === "success"
               ? "border-emerald/30 bg-emerald/10 text-emerald"
               : "border-red/30 bg-red/10 text-red"
