@@ -1,4 +1,4 @@
-import { userRepository } from "../repositories/index.js"
+import { leaderboardService } from "../services/leaderboardService.js"
 
 export class SyncController {
   constructor(syncService) {
@@ -8,7 +8,8 @@ export class SyncController {
   async sync(req, res, next) {
     try {
       const result = await this.syncService.syncMatches()
-      const leaderboard = await userRepository.findLeaderboard()
+      leaderboardService.invalidateCache()
+      const leaderboard = await leaderboardService.getLeaderboard()
       req.app.locals.io.emit("leaderboard-updated", leaderboard)
       res.json(result)
     } catch (error) {
@@ -34,7 +35,8 @@ export class SyncController {
 
     try {
       const result = await this.syncService.syncMatches()
-      const leaderboard = await userRepository.findLeaderboard()
+      leaderboardService.invalidateCache()
+      const leaderboard = await leaderboardService.getLeaderboard()
       req.app.locals.io.emit("leaderboard-updated", leaderboard)
       res.json({ ok: true, ...result })
     } catch (error) {

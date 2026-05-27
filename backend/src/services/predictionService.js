@@ -1,3 +1,4 @@
+import prisma from "../lib/prisma.js"
 import { AppError } from "../utils/AppError.js"
 import { matchRepository } from "../repositories/index.js"
 import { predictionRepository } from "../repositories/index.js"
@@ -34,6 +35,7 @@ export class PredictionService {
     })
   }
 
+  /* // ── old per-row approach (kept for reference) ──
   async awardMatchPoints(matchId) {
     const match = await matchRepository.findById(matchId)
     if (!match || match.status !== "FINISHED") return
@@ -91,5 +93,63 @@ export class PredictionService {
       streak,
       accuracy,
     })
+  }
+  // ── end old approach ── */
+
+  async awardMatchPoints(matchId) {
+    const match = await matchRepository.findById(matchId)
+    if (!match || match.status !== "FINISHED") return
+
+    const { homeScore, awayScore, id } = match
+
+    await prisma.$executeRaw`
+      UPDATE "Prediction"
+      SET "pointsEarned" = CASE
+        WHEN "predictedHomeScore" = ${homeScore} AND "predictedAwayScore" = ${awayScore} THEN 3
+        WHEN (${homeScore} > ${awayScore} AND "predictedHomeScore" > "predictedAwayScore")
+          OR (${homeScore} = ${awayScore} AND "predictedHomeScore" = "predictedAwayScore")
+          OR (${homeScore} < ${awayScore} AND "predictedHomeScore" < "predictedAwayScore") THEN 2
+        ELSE 0
+      END
+      WHERE "matchId" = ${id} AND "skipped" = false
+    `
+
+    await prisma.$executeRaw`
+      UPDATE "User" u
+      SET
+        "totalPoints"       = COALESCE(s.total_points, 0),
+        "correctPredictions" = COALESCE(s.correct_pred, 0),
+        "totalPredictions"   = COALESCE(s.total_pred, 0),
+        "exactScoreHits"     = COALESCE(s.exact_hits, 0),
+        "accuracy"           = CASE WHEN s.total_pred > 0 THEN s.correct_pred::decimal / s.total_pred ELSE 0 END
+      FROM (
+        SELECT p."userId",
+          SUM(p."pointsEarned") AS total_points,
+          COUNT(*) FILTER (WHERE p."pointsEarned" > 0) AS correct_pred,
+          COUNT(*) FILTER (WHERE p."pointsEarned" = 3) AS exact_hits,
+          COUNT(*) AS total_pred
+        FROM "Prediction" p
+        JOIN "Match" m ON p."matchId" = m.id
+        WHERE m.status = 'FINISHED'
+        GROUP BY p."userId"
+      ) s
+      WHERE u.id = s."userId"
+    `
+
+    const userIds = await prisma.prediction.findMany({
+      where: { matchId: id },
+      select: { userId: true },
+      distinct: ["userId"],
+    })
+
+    for (const { userId } of userIds) {
+      const predictions = await predictionRepository.findFinishedByUser(userId)
+      let streak = 0
+      for (let i = predictions.length - 1; i >= 0; i--) {
+        if (predictions[i].pointsEarned > 0) streak++
+        else break
+      }
+      await userRepository.update({ id: userId }, { streak })
+    }
   }
 }
