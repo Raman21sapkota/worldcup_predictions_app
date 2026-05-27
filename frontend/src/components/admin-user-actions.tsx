@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { UserX } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,21 +16,7 @@ import {
 
 export function AdminUserActions({ userId }: { userId: string }) {
   const router = useRouter()
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [banning, setBanning] = useState(false)
-
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        setIsAdmin(data?.role === "ADMIN")
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [])
-
-  if (loading || !isAdmin) return null
 
   const handleBan = async () => {
     setBanning(true)

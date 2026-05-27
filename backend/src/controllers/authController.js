@@ -6,6 +6,7 @@ export class AuthController {
   }
 
   login(req, res) {
+    console.log("User login initiated")
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000"
     res.redirect(this.authService.getGoogleAuthUrl(frontendUrl))
   }
@@ -28,6 +29,7 @@ export class AuthController {
   }
 
   logout(req, res) {
+    console.log(`User logged out: ${req.user?.userId}`)
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000"
     res.cookie(COOKIE_NAME, "", clearCookieOptions())
     res.redirect(frontendUrl)

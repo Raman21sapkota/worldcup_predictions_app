@@ -42,7 +42,7 @@ function rankUsers(users: User[]): RankedUser[] {
   })
 }
 
-export function LeaderboardClient({ initialUsers }: { initialUsers: User[] }) {
+export function LeaderboardClient({ initialUsers, isAdmin }: { initialUsers: User[]; isAdmin?: boolean }) {
   const [users, setUsers] = useState<RankedUser[]>(() => rankUsers(initialUsers))
 
   useEffect(() => {
@@ -128,7 +128,7 @@ export function LeaderboardClient({ initialUsers }: { initialUsers: User[] }) {
                         {user.correctPredictions}/{user.totalPredictions}
                       </div>
                     </div>
-                    <AdminUserActions userId={user.id} />
+                    {isAdmin && <AdminUserActions userId={user.id} />}
                   </CardContent>
                 </Card>
               </Link>

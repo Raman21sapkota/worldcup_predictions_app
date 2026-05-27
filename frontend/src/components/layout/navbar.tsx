@@ -15,7 +15,7 @@ const navLinks = [
   { href: "/profile", label: "Profile" },
 ]
 
-export function Navbar() {
+export function Navbar({ isAdmin }: { isAdmin?: boolean }) {
   const pathname = usePathname()
 
   if (pathname === "/") return null
@@ -45,7 +45,7 @@ export function Navbar() {
         </nav>
       </div>
       <div className="flex items-center gap-2">
-        <SyncButton />
+        {isAdmin && <SyncButton />}
         <LogoutButton />
       </div>
     </header>

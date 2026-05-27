@@ -7,6 +7,7 @@ export class SyncController {
 
   async sync(req, res, next) {
     try {
+      console.log(`Sync triggered by ${req.user.email}`)
       const result = await this.syncService.syncMatches()
       leaderboardService.invalidateCache()
       const leaderboard = await leaderboardService.getLeaderboard()

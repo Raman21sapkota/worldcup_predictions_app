@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import { getSession } from "@/lib/auth"
 import AppLayout from "@/components/layout/app-layout"
 import "./globals.css"
 
@@ -13,15 +14,17 @@ export const metadata: Metadata = {
   description: "Predict match outcomes for the FIFA World Cup 2026",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const session = await getSession()
+
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <AppLayout>{children}</AppLayout>
+        <AppLayout isAdmin={session?.role === "ADMIN"}>{children}</AppLayout>
       </body>
     </html>
   )

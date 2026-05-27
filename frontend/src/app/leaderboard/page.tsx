@@ -11,5 +11,5 @@ export default async function LeaderboardPage() {
 
   const users = await serverApi("/api/leaderboard")
 
-  return <LeaderboardClient initialUsers={users} />
+  return <LeaderboardClient initialUsers={users} isAdmin={session.role === "ADMIN"} />
 }

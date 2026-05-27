@@ -22,6 +22,13 @@ async function startServer() {
 
     app.locals.io = io
 
+    io.on("connection", (socket) => {
+      console.log(`Socket connected (total: ${io.engine.clientsCount})`)
+      socket.on("disconnect", () => {
+        console.log(`Socket disconnected (total: ${io.engine.clientsCount})`)
+      })
+    })
+
     httpServer.listen(PORT, () => {
       console.log(`API server running on http://localhost:${PORT} - (${process.env.NODE_ENV || "development"} mode)`)
     })
