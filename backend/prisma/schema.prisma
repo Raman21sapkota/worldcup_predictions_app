@@ -52,9 +52,13 @@ model Match {
   kickoffTime     DateTime
   status          MatchStatus @default(UPCOMING)
 
-  homeScore       Int?
-  awayScore       Int?
-  winner          String?
+  homeScore           Int?
+  awayScore           Int?
+  extraTimeHomeScore  Int?
+  extraTimeAwayScore  Int?
+  penaltyHomeScore    Int?
+  penaltyAwayScore    Int?
+  winner              String?
 
   venue           String?
 

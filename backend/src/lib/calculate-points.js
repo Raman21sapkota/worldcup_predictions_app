@@ -4,23 +4,25 @@ function calculatePoints(prediction, match) {
   }
 
   const { predictedHomeScore, predictedAwayScore } = prediction
-  const { homeScore, awayScore } = match
+
+  const effectiveHomeScore = match.extraTimeHomeScore ?? match.homeScore
+  const effectiveAwayScore = match.extraTimeAwayScore ?? match.awayScore
 
   if (
-    homeScore === null || awayScore === null ||
+    effectiveHomeScore === null || effectiveAwayScore === null ||
     predictedHomeScore === null || predictedHomeScore === undefined ||
     predictedAwayScore === null || predictedAwayScore === undefined
   ) {
     return { pointsEarned: 0, isCorrect: false, isExactScore: false }
   }
 
-  const isExactScore = predictedHomeScore === homeScore && predictedAwayScore === awayScore
+  const isExactScore = predictedHomeScore === effectiveHomeScore && predictedAwayScore === effectiveAwayScore
 
   if (isExactScore) {
     return { pointsEarned: 3, isCorrect: true, isExactScore: true }
   }
 
-  const actualOutcome = homeScore > awayScore ? "HOME_WIN" : homeScore === awayScore ? "DRAW" : "AWAY_WIN"
+  const actualOutcome = effectiveHomeScore > effectiveAwayScore ? "HOME_WIN" : effectiveHomeScore === effectiveAwayScore ? "DRAW" : "AWAY_WIN"
   const predictedOutcome =
     predictedHomeScore > predictedAwayScore ? "HOME_WIN"
       : predictedHomeScore === predictedAwayScore ? "DRAW" : "AWAY_WIN"

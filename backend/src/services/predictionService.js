@@ -100,15 +100,17 @@ export class PredictionService {
     const match = await matchRepository.findById(matchId)
     if (!match || match.status !== "FINISHED") return
 
-    const { homeScore, awayScore, id } = match
+    const { id } = match
+    const effectiveHomeScore = match.extraTimeHomeScore ?? match.homeScore
+    const effectiveAwayScore = match.extraTimeAwayScore ?? match.awayScore
 
     await prisma.$executeRaw`
       UPDATE "Prediction"
       SET "pointsEarned" = CASE
-        WHEN "predictedHomeScore" = ${homeScore} AND "predictedAwayScore" = ${awayScore} THEN 3
-        WHEN (${homeScore} > ${awayScore} AND "predictedHomeScore" > "predictedAwayScore")
-          OR (${homeScore} = ${awayScore} AND "predictedHomeScore" = "predictedAwayScore")
-          OR (${homeScore} < ${awayScore} AND "predictedHomeScore" < "predictedAwayScore") THEN 2
+        WHEN "predictedHomeScore" = ${effectiveHomeScore} AND "predictedAwayScore" = ${effectiveAwayScore} THEN 3
+        WHEN (${effectiveHomeScore} > ${effectiveAwayScore} AND "predictedHomeScore" > "predictedAwayScore")
+          OR (${effectiveHomeScore} = ${effectiveAwayScore} AND "predictedHomeScore" = "predictedAwayScore")
+          OR (${effectiveHomeScore} < ${effectiveAwayScore} AND "predictedHomeScore" < "predictedAwayScore") THEN 2
         ELSE 0
       END
       WHERE "matchId" = ${id} AND "skipped" = false

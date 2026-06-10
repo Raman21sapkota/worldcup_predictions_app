@@ -64,6 +64,10 @@ export class SyncService {
         status,
         homeScore: apiMatch.score.fullTime.home,
         awayScore: apiMatch.score.fullTime.away,
+        extraTimeHomeScore: apiMatch.score.extraTime?.home ?? null,
+        extraTimeAwayScore: apiMatch.score.extraTime?.away ?? null,
+        penaltyHomeScore: apiMatch.score.penalties?.home ?? null,
+        penaltyAwayScore: apiMatch.score.penalties?.away ?? null,
         winner: apiMatch.score.winner || null,
         syncedAt: new Date(),
       }
