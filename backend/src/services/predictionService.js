@@ -1,4 +1,3 @@
-import prisma from "../lib/prisma.js"
 import { AppError } from "../utils/AppError.js"
 import { matchRepository } from "../repositories/index.js"
 import { predictionRepository } from "../repositories/index.js"
@@ -6,7 +5,7 @@ import { userRepository } from "../repositories/index.js"
 import { calculatePoints } from "../lib/calculate-points.js"
 
 export class PredictionService {
-  async createPrediction(userId, matchId, predictedHomeScore, predictedAwayScore) {
+  async createPrediction(userId, matchId, predictedHomeScore, predictedAwayScore, predictedWinner) {
     const match = await matchRepository.findById(matchId)
     if (!match) {
       throw new AppError("Match not found", 404)
@@ -19,7 +18,7 @@ export class PredictionService {
     }
 
     return predictionRepository.upsertByUserAndMatch(
-      userId, matchId, predictedHomeScore, predictedAwayScore
+      userId, matchId, predictedHomeScore, predictedAwayScore, predictedWinner
     )
   }
 
@@ -100,58 +99,58 @@ export class PredictionService {
     const match = await matchRepository.findById(matchId)
     if (!match || match.status !== "FINISHED") return
 
-    const { id } = match
-    const effectiveHomeScore = match.extraTimeHomeScore ?? match.homeScore
-    const effectiveAwayScore = match.extraTimeAwayScore ?? match.awayScore
+    const predictions = await predictionRepository.findByMatch(matchId)
 
-    await prisma.$executeRaw`
-      UPDATE "Prediction"
-      SET "pointsEarned" = CASE
-        WHEN "predictedHomeScore" = ${effectiveHomeScore} AND "predictedAwayScore" = ${effectiveAwayScore} THEN 3
-        WHEN (${effectiveHomeScore} > ${effectiveAwayScore} AND "predictedHomeScore" > "predictedAwayScore")
-          OR (${effectiveHomeScore} = ${effectiveAwayScore} AND "predictedHomeScore" = "predictedAwayScore")
-          OR (${effectiveHomeScore} < ${effectiveAwayScore} AND "predictedHomeScore" < "predictedAwayScore") THEN 2
-        ELSE 0
-      END
-      WHERE "matchId" = ${id} AND "skipped" = false
-    `
-
-    await prisma.$executeRaw`
-      UPDATE "User" u
-      SET
-        "totalPoints"       = COALESCE(s.total_points, 0),
-        "correctPredictions" = COALESCE(s.correct_pred, 0),
-        "totalPredictions"   = COALESCE(s.total_pred, 0),
-        "exactScoreHits"     = COALESCE(s.exact_hits, 0),
-        "accuracy"           = CASE WHEN s.total_pred > 0 THEN s.correct_pred::decimal / s.total_pred ELSE 0 END
-      FROM (
-        SELECT p."userId",
-          SUM(p."pointsEarned") AS total_points,
-          COUNT(*) FILTER (WHERE p."pointsEarned" > 0) AS correct_pred,
-          COUNT(*) FILTER (WHERE p."pointsEarned" = 3) AS exact_hits,
-          COUNT(*) AS total_pred
-        FROM "Prediction" p
-        JOIN "Match" m ON p."matchId" = m.id
-        WHERE m.status = 'FINISHED'
-        GROUP BY p."userId"
-      ) s
-      WHERE u.id = s."userId"
-    `
-
-    const userIds = await prisma.prediction.findMany({
-      where: { matchId: id },
-      select: { userId: true },
-      distinct: ["userId"],
-    })
-
-    for (const { userId } of userIds) {
-      const predictions = await predictionRepository.findFinishedByUser(userId)
-      let streak = 0
-      for (let i = predictions.length - 1; i >= 0; i--) {
-        if (predictions[i].pointsEarned > 0) streak++
-        else break
+    for (const prediction of predictions) {
+      const result = calculatePoints(prediction, match)
+      if (prediction.pointsEarned !== result.pointsEarned) {
+        await predictionRepository.update(
+          { id: prediction.id },
+          { pointsEarned: result.pointsEarned }
+        )
       }
-      await userRepository.update({ id: userId }, { streak })
     }
+
+    const userIds = [...new Set(predictions.map((p) => p.userId))]
+    for (const userId of userIds) {
+      await this.recalculateUserStats(userId)
+    }
+  }
+
+  async recalculateUserStats(userId) {
+    const userPredictions = await predictionRepository.findFinishedByUser(userId)
+
+    const totalPredictions = userPredictions.length
+    let totalPoints = 0
+    let correctPredictions = 0
+    let exactScoreHits = 0
+
+    for (const p of userPredictions) {
+      const result = calculatePoints(p, p.match)
+      totalPoints += result.pointsEarned
+      if (result.isCorrect) correctPredictions++
+      if (result.isExactScore) exactScoreHits++
+    }
+
+    let streak = 0
+    for (let i = userPredictions.length - 1; i >= 0; i--) {
+      const result = calculatePoints(userPredictions[i], userPredictions[i].match)
+      if (result.isCorrect) {
+        streak++
+      } else {
+        break
+      }
+    }
+
+    const accuracy = totalPredictions > 0 ? correctPredictions / totalPredictions : 0
+
+    await userRepository.update({ id: userId }, {
+      totalPoints,
+      correctPredictions,
+      totalPredictions,
+      exactScoreHits,
+      streak,
+      accuracy,
+    })
   }
 }

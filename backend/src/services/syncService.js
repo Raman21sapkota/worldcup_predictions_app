@@ -69,6 +69,7 @@ export class SyncService {
         penaltyHomeScore: apiMatch.score.penalties?.home ?? null,
         penaltyAwayScore: apiMatch.score.penalties?.away ?? null,
         winner: apiMatch.score.winner || null,
+        duration: apiMatch.score.duration || null,
         syncedAt: new Date(),
       }
 

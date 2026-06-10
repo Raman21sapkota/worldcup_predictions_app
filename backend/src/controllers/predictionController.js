@@ -5,9 +5,9 @@ export class PredictionController {
 
   async create(req, res, next) {
     try {
-      const { matchId, predictedHomeScore, predictedAwayScore } = req.body
+      const { matchId, predictedHomeScore, predictedAwayScore, predictedWinner } = req.body
       const prediction = await this.predictionService.createPrediction(
-        req.user.userId, matchId, predictedHomeScore, predictedAwayScore
+        req.user.userId, matchId, predictedHomeScore, predictedAwayScore, predictedWinner
       )
       res.status(201).json(prediction)
     } catch (error) {

@@ -8,6 +8,7 @@ export const predictionSchema = z.object({
   matchId: z.string().min(1, "matchId is required"),
   predictedHomeScore: scoreFormat,
   predictedAwayScore: scoreFormat,
+  predictedWinner: z.enum(["HOME_TEAM", "AWAY_TEAM"]).optional().nullable(),
 })
 
 export const updateUsernameSchema = z.object({

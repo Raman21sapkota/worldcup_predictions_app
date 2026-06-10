@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { CountdownTimer } from "@/components/match/countdown-timer"
 import { ScoreStepper } from "@/components/ui/score-stepper"
 import { PredictionBadge } from "@/components/match/prediction-badge"
-import { stageColors } from "@/lib/stage-config"
+import { stageColors, isKnockoutStage } from "@/lib/stage-config"
 
 type MatchStatus = "UPCOMING" | "LIVE" | "FINISHED"
 
@@ -21,11 +21,18 @@ interface Match {
   status: MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  winner?: string | null
+  duration?: string | null
+  extraTimeHomeScore?: number | null
+  extraTimeAwayScore?: number | null
+  penaltyHomeScore?: number | null
+  penaltyAwayScore?: number | null
 }
 
 interface UserPrediction {
   predictedHomeScore: number | null
   predictedAwayScore: number | null
+  predictedWinner: string | null
   pointsEarned: number
   skipped: boolean
 }
@@ -41,16 +48,26 @@ interface MatchCardProps {
   saving?: boolean
   showStageBadge?: boolean
   className?: string
+  predictedWinner?: string | null
+  onPredictedWinnerChange?: (value: string | null) => void
+  stage?: string
 }
 
 function getResultBadgeStatus(
   prediction: UserPrediction,
-  match: { homeScore?: number | null; awayScore?: number | null }
+  match: { homeScore?: number | null; awayScore?: number | null; stage?: string }
 ): "exact" | "correct" | "incorrect" | "skipped" | "hidden" {
   if (prediction.skipped) return "skipped"
   if (match.homeScore == null || match.awayScore == null) return "hidden"
-  if (prediction.pointsEarned === 3) return "exact"
-  if (prediction.pointsEarned === 2) return "correct"
+  if (prediction.pointsEarned === 5) return "exact"
+  if (prediction.pointsEarned === 3) {
+    if (match.stage && isKnockoutStage(match.stage)) return "correct"
+    return "exact"
+  }
+  if (prediction.pointsEarned === 2) {
+    if (match.stage && isKnockoutStage(match.stage)) return "exact"
+    return "correct"
+  }
   return "incorrect"
 }
 
@@ -65,8 +82,12 @@ export function MatchCard({
   saving,
   showStageBadge = true,
   className,
+  predictedWinner,
+  onPredictedWinnerChange,
+  stage,
 }: MatchCardProps) {
   const isInteractive = match.status === "UPCOMING"
+  const isKnockout = isKnockoutStage(stage ?? match.stage)
   const isTbdMatch = match.homeTeam === "TBD" || match.awayTeam === "TBD"
   const hasPrediction =
     userPrediction &&
@@ -75,6 +96,11 @@ export function MatchCard({
     userPrediction.predictedAwayScore !== null
 
   const stageClass = stageColors[match.stage] || "bg-muted text-muted-foreground border-border"
+
+  const homeNum = parseInt(homeScoreInput ?? "", 10)
+  const awayNum = parseInt(awayScoreInput ?? "", 10)
+  const isDrawScore = !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum
+  const needsWinnerPick = isKnockout && isDrawScore && !isTbdMatch
 
   function TeamName({ name, side }: { name: string; side: "home" | "away" }) {
     const isTbd = name === "TBD"
@@ -125,13 +151,24 @@ export function MatchCard({
         <div className="flex items-center gap-3 px-4 shrink-0">
           {(match.status === "LIVE" || match.status === "FINISHED") && (
             <span className="text-2xl font-black tabular-nums tracking-tight">
-              <span className={match.status === "FINISHED" && hasPrediction && userPrediction?.pointsEarned === 3 ? "text-gold" : ""}>
+              <span className={match.status === "FINISHED" && hasPrediction && (userPrediction?.pointsEarned === 5 || userPrediction?.pointsEarned === 3) ? "text-gold" : ""}>
                 {match.homeScore ?? "-"}
               </span>
               <span className="mx-1.5 text-muted-foreground/50">:</span>
-              <span className={match.status === "FINISHED" && hasPrediction && userPrediction?.pointsEarned === 3 ? "text-gold" : ""}>
+              <span className={match.status === "FINISHED" && hasPrediction && (userPrediction?.pointsEarned === 5 || userPrediction?.pointsEarned === 3) ? "text-gold" : ""}>
                 {match.awayScore ?? "-"}
               </span>
+              {match.status === "FINISHED" && match.duration && (
+                <span className="ml-1.5 text-xs text-muted-foreground font-medium">
+                  {match.duration === "PENALTY_SHOOTOUT"
+                    ? match.penaltyHomeScore != null && match.penaltyAwayScore != null
+                      ? `(${match.penaltyHomeScore}-${match.penaltyAwayScore} pens)`
+                      : "(pens)"
+                    : match.duration === "EXTRA_TIME"
+                      ? "(AET)"
+                      : ""}
+                </span>
+              )}
             </span>
           )}
           {match.status === "UPCOMING" && (
@@ -179,11 +216,42 @@ export function MatchCard({
                   onChange={(v) => onAwayScoreChange?.(v)}
                 />
               </div>
+              {isKnockout && (
+                <div className="flex items-center justify-center gap-2 py-1">
+                  <span className="text-xs text-muted-foreground mr-1">Who advances?</span>
+                  <button
+                    onClick={() => onPredictedWinnerChange?.("HOME_TEAM")}
+                    className={cn(
+                      "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
+                      predictedWinner === "HOME_TEAM" && !needsWinnerPick
+                        ? "bg-muted text-muted-foreground border-border cursor-default"
+                        : predictedWinner === "HOME_TEAM"
+                          ? "bg-fifa-blue/15 text-fifa-blue border-fifa-blue/30"
+                          : "bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/50"
+                    )}
+                  >
+                    {match.homeTeam}
+                  </button>
+                  <button
+                    onClick={() => onPredictedWinnerChange?.("AWAY_TEAM")}
+                    className={cn(
+                      "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
+                      predictedWinner === "AWAY_TEAM" && !needsWinnerPick
+                        ? "bg-muted text-muted-foreground border-border cursor-default"
+                        : predictedWinner === "AWAY_TEAM"
+                          ? "bg-fifa-blue/15 text-fifa-blue border-fifa-blue/30"
+                          : "bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/50"
+                    )}
+                  >
+                    {match.awayTeam}
+                  </button>
+                </div>
+              )}
               <Button
                 variant="default"
                 size="lg"
                 onClick={onSubmit}
-                disabled={saving || !homeScoreInput || homeScoreInput === "" || !awayScoreInput || awayScoreInput === ""}
+                disabled={saving || !homeScoreInput || homeScoreInput === "" || !awayScoreInput || awayScoreInput === "" || (needsWinnerPick && !predictedWinner)}
                 className="w-full bg-gradient-to-r from-fifa-blue to-fifa-blue-light text-white hover:from-fifa-blue-light hover:to-fifa-blue"
               >
                 {saving ? "Saving..." : hasPrediction ? "Update" : "Predict"}
@@ -201,6 +269,11 @@ export function MatchCard({
                 Your pick:{" "}
                 <span className="font-semibold text-foreground">
                   {userPrediction!.predictedHomeScore}–{userPrediction!.predictedAwayScore}
+                  {userPrediction!.predictedWinner && match.stage && isKnockoutStage(match.stage) && (
+                    <span className="text-muted-foreground font-normal">
+                      {" "}{userPrediction!.predictedWinner === "HOME_TEAM" ? match.homeTeam : match.awayTeam} advances
+                    </span>
+                  )}
                 </span>
               </span>
               {match.status === "FINISHED" && (

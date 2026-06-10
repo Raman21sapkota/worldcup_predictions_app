@@ -18,6 +18,10 @@ export const stageColors: Record<string, string> = {
   FINAL: "bg-gold/20 text-gold border-gold/40",
 }
 
+export function isKnockoutStage(stage: string): boolean {
+  return !["GROUP_STAGE", "GROUP STAGE"].includes(stage)
+}
+
 export function isStageMatch(matchStage: string, filterKey: string): boolean {
   if (filterKey === "__all__") return true
   const filter = STAGE_FILTERS.find((f) => f.key === filterKey)

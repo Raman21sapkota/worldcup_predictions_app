@@ -52,13 +52,10 @@ model Match {
   kickoffTime     DateTime
   status          MatchStatus @default(UPCOMING)
 
-  homeScore           Int?
-  awayScore           Int?
-  extraTimeHomeScore  Int?
-  extraTimeAwayScore  Int?
-  penaltyHomeScore    Int?
-  penaltyAwayScore    Int?
-  winner              String?
+  homeScore       Int?
+  awayScore       Int?
+  winner          String?
+  duration        String?
 
   venue           String?
 
@@ -79,6 +76,7 @@ model Prediction {
 
   predictedHomeScore Int?
   predictedAwayScore Int?
+  predictedWinner    String?
 
   skipped            Boolean  @default(false)
   pointsEarned       Int      @default(0)

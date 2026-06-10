@@ -8,7 +8,7 @@ import { SyncButton } from "@/components/sync-button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { stageColors, formatStage, STAGE_FILTERS, isStageMatch } from "@/lib/stage-config"
+import { stageColors, formatStage, STAGE_FILTERS, isStageMatch, isKnockoutStage } from "@/lib/stage-config"
 
 type MatchStatus = "UPCOMING" | "LIVE" | "FINISHED"
 
@@ -23,11 +23,18 @@ interface Match {
   status: MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  winner?: string | null
+  duration?: string | null
+  extraTimeHomeScore?: number | null
+  extraTimeAwayScore?: number | null
+  penaltyHomeScore?: number | null
+  penaltyAwayScore?: number | null
 }
 
 interface Prediction {
   predictedHomeScore: number | null
   predictedAwayScore: number | null
+  predictedWinner: string | null
   pointsEarned: number
   skipped: boolean
 }
@@ -49,6 +56,13 @@ export default function HomeClient({
           away: String(pred.predictedAwayScore),
         }
       }
+    }
+    return initial
+  })
+  const [winnerInputs, setWinnerInputs] = useState<Record<string, string | null>>(() => {
+    const initial: Record<string, string | null> = {}
+    for (const [matchId, pred] of Object.entries(predictionsMap)) {
+      if (pred?.predictedWinner) initial[matchId] = pred.predictedWinner
     }
     return initial
   })
@@ -77,6 +91,7 @@ export default function HomeClient({
             matchId,
             predictedHomeScore: parseInt(scores.home, 10),
             predictedAwayScore: parseInt(scores.away, 10),
+            predictedWinner: winnerInputs[matchId] || null,
           }),
         })
         if (!res.ok) {
@@ -91,18 +106,31 @@ export default function HomeClient({
         setSavingId(null)
       }
     },
-    [scoreInputs, router]
+    [scoreInputs, winnerInputs, router]
   )
 
   const handleScoreChange = useCallback(
     (matchId: string, side: "home" | "away", value: string) => {
-      setScoreInputs((prev) => ({
-        ...prev,
-        [matchId]: {
-          ...prev[matchId],
-          [side]: value,
-        },
-      }))
+      setScoreInputs((prev) => {
+        const current = prev[matchId] ?? { home: "", away: "" }
+        const newVal = { ...current, [side]: value }
+        const parsedHome = parseInt(newVal.home, 10) || 0
+        const parsedAway = parseInt(newVal.away, 10) || 0
+        if (isNaN(parsedHome) || isNaN(parsedAway)) return { ...prev, [matchId]: newVal }
+        if (parsedHome > parsedAway) {
+          setWinnerInputs((w) => ({ ...w, [matchId]: "HOME_TEAM" }))
+        } else if (parsedHome < parsedAway) {
+          setWinnerInputs((w) => ({ ...w, [matchId]: "AWAY_TEAM" }))
+        }
+        return { ...prev, [matchId]: newVal }
+      })
+    },
+    []
+  )
+
+  const handleWinnerChange = useCallback(
+    (matchId: string, winner: string | null) => {
+      setWinnerInputs((prev) => ({ ...prev, [matchId]: winner }))
     },
     []
   )
@@ -115,6 +143,12 @@ export default function HomeClient({
       awayFlag: rest.awayFlag ?? undefined,
       homeScore: rest.homeScore ?? undefined,
       awayScore: rest.awayScore ?? undefined,
+      winner: rest.winner ?? undefined,
+      duration: rest.duration ?? undefined,
+      extraTimeHomeScore: rest.extraTimeHomeScore ?? undefined,
+      extraTimeAwayScore: rest.extraTimeAwayScore ?? undefined,
+      penaltyHomeScore: rest.penaltyHomeScore ?? undefined,
+      penaltyAwayScore: rest.penaltyAwayScore ?? undefined,
     } as const
   }
 
@@ -294,6 +328,9 @@ export default function HomeClient({
                               onSubmit={() => handlePredict(id)}
                               saving={savingId === id}
                               showStageBadge={false}
+                              predictedWinner={winnerInputs[id] ?? null}
+                              onPredictedWinnerChange={(value) => handleWinnerChange(id, value)}
+                              stage={match.stage}
                             />
                           )
                         })}
@@ -346,6 +383,9 @@ export default function HomeClient({
                               onSubmit={isUpcomingMatch ? () => handlePredict(id) : undefined}
                               saving={isUpcomingMatch ? savingId === id : undefined}
                               showStageBadge={false}
+                              predictedWinner={winnerInputs[id] ?? null}
+                              onPredictedWinnerChange={(value) => handleWinnerChange(id, value)}
+                              stage={match.stage}
                             />
                           )
                         })}

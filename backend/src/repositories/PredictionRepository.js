@@ -14,11 +14,11 @@ class PredictionRepository extends BaseRepository {
     })
   }
 
-  async upsertByUserAndMatch(userId, matchId, predictedHomeScore, predictedAwayScore) {
+  async upsertByUserAndMatch(userId, matchId, predictedHomeScore, predictedAwayScore, predictedWinner) {
     return this.model.upsert({
       where: { userId_matchId: { userId, matchId } },
-      create: { userId, matchId, predictedHomeScore, predictedAwayScore, skipped: false },
-      update: { predictedHomeScore, predictedAwayScore, skipped: false },
+      create: { userId, matchId, predictedHomeScore, predictedAwayScore, predictedWinner: predictedWinner ?? null, skipped: false },
+      update: { predictedHomeScore, predictedAwayScore, predictedWinner: predictedWinner ?? null, skipped: false },
     })
   }
 
